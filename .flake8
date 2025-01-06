@@ -1,0 +1,16 @@
+[flake8]
+exclude = 
+    __pycache__
+    __init__.py
+    .git,
+    .aws-sam,
+    .env,
+    env
+
+# E128: continuation line under-indented for visual indent
+# E712: comparison to True should be 'if cond is True:' or 'if cond:'
+# W503: line break before binary operator
+ignore=E128,E712,W503
+
+# The GitHub editor is 127 chars wide
+max-line-length = 127
