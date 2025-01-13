@@ -101,7 +101,7 @@ logger = logging.getLogger('SpeedTestMonitor')
 logger.addHandler(file_handler)
 
 config = configparser.ConfigParser()
-config.read('config/config.ini')
+config.read(f'{current_dir}/config/config.ini')
 
 try:
     asyncio.run(main())
