@@ -49,8 +49,9 @@ Create a file `config/config.ini` file and fill in the details
 # How to run
 
 1. Clone the repo
-2. Create a configuration file as defined in the Configuration section above
-3. `python3 monitor.py`
+2. Run `pip install -r requirements.txt`
+3. Create a configuration file as defined in the Configuration section above
+4. `python3 monitor.py`
 
 For continued notifications, set it up to run as a cron job or scheduled task.
 
