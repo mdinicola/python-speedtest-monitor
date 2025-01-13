@@ -3,6 +3,7 @@ import configparser
 import requests
 import time
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from asuswrtspeedtest import SpeedtestClient
@@ -85,11 +86,14 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-Path('logs').mkdir(exist_ok=True)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+log_dir = f'{current_dir}/logs'
+
+Path(log_dir).mkdir(exist_ok=True)
 
 formatter = logging.Formatter('[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s')
 
-file_handler = logging.FileHandler('logs/monitor.log')
+file_handler = logging.FileHandler(f'{log_dir}/monitor.log')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
 
