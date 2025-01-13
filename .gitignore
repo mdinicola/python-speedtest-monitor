@@ -135,3 +135,4 @@ dmypy.json
 
 env_vars.sh
 config/config.ini
+logs

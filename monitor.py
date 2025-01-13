@@ -1,8 +1,11 @@
+import asyncio
 import configparser
 import requests
-
-config = configparser.ConfigParser()
-config.read('config/config.ini')
+import time
+import logging
+from datetime import datetime
+from pathlib import Path
+from asuswrtspeedtest import SpeedtestClient
 
 
 def get_download_speed(config: dict):
@@ -22,21 +25,83 @@ def get_download_speed(config: dict):
     return data['download']
 
 
+def convert_bps_to_mbps(bps: int):
+    mbps = (bps * 8) / (1000 * 1000)
+    return mbps
+
+
+def is_speedtest_current(current_timestamp: int, speedtest_time: str):
+    parsed_speedtest_time = datetime.strptime(speedtest_time, '%Y-%m-%dT%H:%M:%S%z')
+    speedtest_timestamp = int(datetime.timestamp(parsed_speedtest_time))
+
+    if current_timestamp > speedtest_timestamp:
+        return True
+
+    return False
+
+
 def send_pushover_message(message: str, config: dict):
-    url = 'https://api.pushover.net/1/messages.json'
-    payload = {
-        "message": message,
-        "user": config.get('pushover', 'user_id'),
-        "token": config.get('pushover', 'api_token'),
-        "sound": config.get('pushover', 'sound')
-    }
-    response = requests.post(url, data=payload)
+    if config.getboolean('pushover', 'enabled'):
+        url = 'https://api.pushover.net/1/messages.json'
+        payload = {
+            "message": message,
+            "user": config.get('pushover', 'user_id'),
+            "token": config.get('pushover', 'api_token'),
+            "sound": config.get('pushover', 'sound')
+        }
+        response = requests.post(url, data=payload)
 
-    if response.status_code != 200:
-        raise Exception('Could not send pushover message')
+        if response.status_code != 200:
+            raise Exception('Could not send pushover message')
 
 
-download_speed = get_download_speed(config)
-message = f'Current Download:\n{download_speed}'
+async def main():
+    download_speed = float(get_download_speed(config))
 
-print(message)
+    if download_speed < config.getint('monitor', 'download_threshold'):
+        message = f'Download Speed: {download_speed}'
+        if config.getboolean('asus_router', 'run_speedtest'):
+            current_timestamp = int(time.time())
+            async with SpeedtestClient(config) as speedtest_client:
+                await speedtest_client.run()
+                latest_speedtest_result = (await speedtest_client.asus_get_speedtest_history())[0]
+
+            if not is_speedtest_current(current_timestamp, latest_speedtest_result['timestamp']):
+                message += '\nRouter speedtest did not run'
+                send_pushover_message(message, config)
+                logger.info(message)
+                return
+
+            router_speed_mbps = convert_bps_to_mbps(latest_speedtest_result['download']['bandwidth'])
+            router_speed = '{:0.2f}'.format(router_speed_mbps)
+            message += f'\nRouter Download Speed: {router_speed}'
+
+        send_pushover_message(message, config)
+        logger.info(message.replace('\n', ' - '))
+
+
+logging.basicConfig(
+    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    level=logging.INFO
+)
+
+Path('log').mkdir(exist_ok=True)
+
+formatter = logging.Formatter('[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s')
+
+file_handler = logging.FileHandler('logs/monitor.log')
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+logger = logging.getLogger('SpeedTestMonitor')
+logger.addHandler(file_handler)
+
+config = configparser.ConfigParser()
+config.read('config/config.ini')
+
+try:
+    asyncio.run(main())
+except Exception as e:
+    message = 'Error occurred. Check log for details'
+    send_pushover_message(message, config)
+    logger.error(f'{e}')
