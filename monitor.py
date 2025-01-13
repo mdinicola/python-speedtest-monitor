@@ -85,7 +85,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-Path('log').mkdir(exist_ok=True)
+Path('logs').mkdir(exist_ok=True)
 
 formatter = logging.Formatter('[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s')
 
