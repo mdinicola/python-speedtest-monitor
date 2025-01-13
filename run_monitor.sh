@@ -1,2 +1,3 @@
 #!/bin/bash
-python3 monitor.py
+BASEDIR=$(dirname $0)
+python3 $BASEDIR/monitor.py
