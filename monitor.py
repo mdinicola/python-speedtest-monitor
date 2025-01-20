@@ -48,7 +48,8 @@ def send_pushover_message(message: str, config: dict):
             "message": message,
             "user": config.get('pushover', 'user_id'),
             "token": config.get('pushover', 'api_token'),
-            "sound": config.get('pushover', 'sound')
+            "sound": config.get('pushover', 'sound'),
+            "priority": config.getint('pushover', 'priority')
         }
         response = requests.post(url, data=payload)
 
